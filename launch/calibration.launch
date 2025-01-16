@@ -1,0 +1,34 @@
+<launch>
+    <arg name="calib_radar2lidar" default="false"/>
+    <arg name="calib_lidar2lidar" default="false"/>
+    <arg name="calib_lidar2camera" default="false"/>
+    <arg name="calib_radar2camera" default="false"/>
+
+    <group if="$(arg calib_radar2lidar)">
+    <node pkg="multi_sensor_calibration" type="radar_lidar_calibration_node" name="dynamic_calibration" output="screen" >
+        <param name="lidar_topic" value="/rslidar_points"/>
+        <param name="radar_topic" value="/visualize_objects"/>
+    </node>
+    </group>
+
+    <group if="$(arg calib_lidar2lidar)">
+    <node pkg="multi_sensor_calibration" type="lidar_lidar_calibration_node" name="dynamic_calibration" output="screen" >
+        <param name="target_lidar_topic" value="/middle/rslidar_points"/>
+        <param name="source_lidar_topic" value="/left/rslidar_points"/>
+    </node>
+    </group>
+
+    <group if="$(arg calib_lidar2camera)">
+    <node pkg="multi_sensor_calibration" type="lidar_camera_calibration_node" name="dynamic_calibration" output="screen" >
+        <param name="lidar_topic" value="/middle/rslidar_points"/>
+        <param name="camera_topic" value="/camera/image"/>
+    </node>
+    </group>
+
+    <group if="$(arg calib_radar2camera)">
+    <node pkg="multi_sensor_calibration" type="radar_camera_calibration_node" name="dynamic_calibration" output="screen" >
+        <param name="radar_topic" value="/visualize_objects"/>
+        <param name="camera_topic" value="/camera/image"/>
+    </node>
+    </group>
+</launch>

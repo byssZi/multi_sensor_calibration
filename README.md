@@ -155,7 +155,7 @@ roslaunch multi_sensor_calibration calibration.launch calib_radar2camera:=true
 
    ``deg step`` ``t step `` :  这两个按钮更改每次单击或键盘输入的调整步骤。
 
-   ``point size``: 调整激光雷达点云投影到图像上的大小
+   ``point size``: 调整毫米波雷达点云投影到图像上的大小
 
    ``Reset``:  按下按钮重置所有手动调整
 
@@ -200,7 +200,7 @@ roslaunch multi_sensor_calibration calibration.launch calib_lidar2imu:=true
 
    ``deg step`` ``t step `` :  这两个按钮更改每次单击或键盘输入的调整步骤。
 
-   ``point size``: 调整激光雷达点云投影到图像上的大小
+   ``point size``: 调整激光雷达点云的大小
 
    ``Auto Calibration``: 进行自动标定（需等待一段时间后即可）
 

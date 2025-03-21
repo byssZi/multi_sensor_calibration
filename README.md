@@ -169,6 +169,7 @@ source devel/setup.bash
 ```
 ## Step2
 发布lidar与imu的ros话题，格式如下:</br>
+imu话题：CGI610GNSSMsg自定义消息</br>
 lidar点云话题：sensor_msgs::PointCloud2
 |参数名称|功能描述|格式|
 |---|---|---|
@@ -178,7 +179,7 @@ lidar点云话题：sensor_msgs::PointCloud2
 |intensity|点云反射强度|float32|
 |ring|点云所属线束信息|uint16|
 |timestamp|点云时间|double|
-imu话题：CGI610GNSSMsg自定义消息</br>
+
 ```bash
 roslaunch multi_sensor_calibration calibration.launch calib_lidar2imu:=true
 ```
@@ -186,7 +187,7 @@ roslaunch multi_sensor_calibration calibration.launch calib_lidar2imu:=true
 播放用于标定的rosbag包,等待一定时间采集足够多组数据后方可进行自动标定</br>
 若要进行自动标定，在录制rosbag包的时候需尽可能使车辆在结构化道路上（周边有建筑物）以10km/h的速度绕8字形式，并且周围尽量没有移动障碍物。
 ## Step4
-标定界面由用于手动校准的左侧控制面板和中间侧图像界面以及右侧鸟瞰图组成。用户可以通过单击面板中的相应按钮或使用键盘作为输入来调整外部参数，来检查点云与图像是否对齐。当点云投影到图像上对齐时，校准结束，单击保存按钮保存结果。
+标定界面由用于手动校准的左侧控制面板和中间侧图像界面以及右侧鸟瞰图组成。用户可以通过单击面板中的相应按钮或使用键盘作为输入来调整外部参数，来检查点云是否能建图。当点云建图正确时，校准结束，单击保存按钮保存结果。
 
    | 外参调整 | 键盘输入 | 外参调整 | 键盘输入 |
    | :--------------: | :------------: | :--------------: | :------------: |
@@ -202,6 +203,8 @@ roslaunch multi_sensor_calibration calibration.launch calib_lidar2imu:=true
    ``point size``: 调整激光雷达点云投影到图像上的大小
 
    ``Auto Calibration``: 进行自动标定（需等待一段时间后即可）
+
+   ``Show All Point``: 显示点云建图结果
 
    ``Reset``:  按下按钮重置所有手动调整
 

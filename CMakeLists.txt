@@ -1,9 +1,9 @@
 cmake_minimum_required(VERSION 3.0.2)
 project(multi_sensor_calibration)
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 ## Compile as C++11, supported in ROS Kinetic and newer
-add_compile_options(-std=c++14)
+add_compile_options(-std=c++17)
 # set(CMAKE_BUILD_TYPE Debug)
 
 ## Find catkin macros and libraries
@@ -22,6 +22,7 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   cv_bridge
   image_transport
+  message_filters
 )
 
 ## System dependencies are found with CMake's conventions
@@ -32,6 +33,9 @@ find_package(PCL REQUIRED)
 find_package(Pangolin REQUIRED)
 find_package(jsoncpp REQUIRED)
 find_package(OpenCV 4.2.0 REQUIRED)
+
+add_subdirectory(ceres)
+include_directories(${PROJECT_SOURCE_DIR}/ceres/include)
 
 
 
@@ -96,6 +100,7 @@ add_message_files(
   ObjectList.msg
   Cluster.msg
   ClusterList.msg
+  CGI610GNSSMsg.msg
 )
 generate_messages(
   DEPENDENCIES
@@ -135,7 +140,7 @@ generate_messages(
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES radar_lidar_static_calibration
-  CATKIN_DEPENDS cv_bridge image_transport message_generation message_runtime pcl_ros roscpp rospy sensor_msgs tf visualization_msgs geometry_msgs std_msgs nav_msgs
+  CATKIN_DEPENDS cv_bridge image_transport message_generation message_runtime message_filters pcl_ros roscpp rospy sensor_msgs tf visualization_msgs geometry_msgs std_msgs nav_msgs
 #  DEPENDS system_lib
 )
 
@@ -159,7 +164,7 @@ link_directories(${Pangolin_LIBRARY_DIRS})
 link_directories(${PCL_LIBRARY_DIRS})
 link_directories(${JSONCPP_LIBRARY_DIRS})
 link_directories(${OpenCV_LIBRARY_DIRS})
-
+add_definitions(${PCL_DEFINITIONS})
 
 
 ## Declare a C++ library
@@ -265,7 +270,12 @@ target_link_libraries(lidar_lidar_calibration_node
   jsoncpp_lib
 )
 
-add_executable(lidar_camera_calibration_node src/lidar_camera_calibration_node.cpp)
+add_executable(lidar_camera_calibration_node src/lidar_camera_calibration_node.cpp
+                                             include/autocalib/lidar2camera/CalibrationHandler.cpp
+                                             include/autocalib/lidar2camera/HistogramHandler.cpp
+                                             include/autocalib/lidar2camera/ProbabilityHandler.cpp
+                                             include/autocalib/lidar2camera/Types.cpp
+                                             include/autocalib/lidar2camera/utils/Utility.cpp)
 target_link_libraries(lidar_camera_calibration_node 
   jsoncpp_lib 
   ${PCL_LIBRARIES} 
@@ -282,3 +292,13 @@ target_link_libraries(radar_camera_calibration_node
   ${OpenCV_LIBS} 
   ${catkin_LIBRARIES}
 )
+
+add_executable(lidar_imu_calibration_node src/lidar_imu_calibration_node.cpp)
+target_link_libraries(lidar_imu_calibration_node
+  ${catkin_LIBRARIES}
+  ${PCL_LIBRARIES}
+  ${Pangolin_LIBRARIES}
+  jsoncpp_lib
+  ceres
+)
+add_dependencies(lidar_imu_calibration_node  ${PROJECT_NAME}_generate_messages_cpp)

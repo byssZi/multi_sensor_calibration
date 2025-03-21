@@ -27,9 +27,15 @@
 #include "extrinsic_param.hpp"
 #include "intrinsic_param.hpp"
 #include "projector_lidar.hpp"
+#include "autocalib/lidar2camera/sensors_calib.hpp"
 
 using namespace std;
-
+namespace
+{
+using PointCloudType = pcl::PointXYZI;
+using PointCloud = pcl::PointCloud<PointCloudType>;
+using PointCloudPtr = PointCloud::Ptr;
+}  // namespace
 #define GL_GPU_MEM_INFO_CURRENT_AVAILABLE_MEM_NVX 0x9049
 #define APPLY_COLOR_TO_LIDAR_INTENSITY // to set intensity colored or not
 
@@ -49,9 +55,11 @@ static Eigen::Matrix4d orign_calibration_matrix_ = Eigen::Matrix4d::Identity();
 static Eigen::Matrix3d intrinsic_matrix_ = Eigen::Matrix3d::Identity();
 static Eigen::Matrix3d orign_intrinsic_matrix_ = Eigen::Matrix3d::Identity();
 std::vector<float> distortions_;
-std::vector<Eigen::Matrix4d, Eigen::aligned_allocator<Eigen::Vector4d>> modification_list_(12);
+std::vector<Eigen::Matrix4d> modification_list_(12);
 bool display_mode_ = false;
 bool filter_mode_ = false;
+static cv::Mat global_D (5,1,cv::DataType<double>::type); 
+static cv::Mat global_K (3,3,cv::DataType<double>::type); 
 
 bool kbhit() {
   termios term;
@@ -210,8 +218,8 @@ bool ManualCalibration(int key_input) {
 
 void lidar_callback(const sensor_msgs::PointCloud2::ConstPtr& lidar_msg)
 {
-    lidar->clear();
-    pcl::fromROSMsg(*lidar_msg, *lidar);
+  lidar->clear();
+  pcl::fromROSMsg(*lidar_msg, *lidar);
 }
 
 void camera_callback(const sensor_msgs::Image::ConstPtr& camera_msg)
@@ -225,6 +233,27 @@ void camera_callback(const sensor_msgs::Image::ConstPtr& camera_msg)
   }
   img  = cv_ptr->image;
 } 
+
+void AssignIntrinsicAndDistortion(const Eigen::Matrix3d& K, const std::vector<double>& dist) {
+  // 赋值给 global_K
+  for (int i = 0; i < 3; ++i) {
+    for (int j = 0; j < 3; ++j) {
+      global_K.at<double>(i, j) = K(i, j);
+    }
+  }
+
+  // 赋值给 global_D
+  for (int i = 0; i < dist.size(); ++i) {
+    global_D.at<double>(i, 0) = dist[i];
+  }
+
+  // 打印内参矩阵和畸变系数
+  std::cout << "intrinsic:\n"
+            << K(0, 0) << " " << K(0, 1) << " " << K(0, 2) << "\n"
+            << K(1, 0) << " " << K(1, 1) << " " << K(1, 2) << "\n"
+            << K(2, 0) << " " << K(2, 1) << " " << K(2, 2) << "\n";
+  std::cout << "dist:\n" << dist[0] << " " << dist[1] << "\n";
+}
 
 int main(int argc, char **argv) {
   
@@ -256,11 +285,8 @@ int main(int argc, char **argv) {
 
   intrinsic_matrix_ = K;
   orign_intrinsic_matrix_ = intrinsic_matrix_;
-  std::cout << "intrinsic:\n"
-            << K(0, 0) << " " << K(0, 1) << " " << K(0, 2) << "\n"
-            << K(1, 0) << " " << K(1, 1) << " " << K(1, 2) << "\n"
-            << K(2, 0) << " " << K(2, 1) << " " << K(2, 2) << "\n";
-  std::cout << "dist:\n" << dist[0] << " " << dist[1] << "\n";
+
+  AssignIntrinsicAndDistortion(K, dist);
 
   // load extrinsic
   Eigen::Matrix4d json_param;
@@ -322,6 +348,8 @@ int main(int argc, char **argv) {
   pangolin::Var<bool> minusFx("cp.- fx", false, false);
   pangolin::Var<bool> addFy("cp.+ fy", false, false);
   pangolin::Var<bool> minusFy("cp.- fy", false, false);
+
+  pangolin::Var<bool> auto_calibrate("cp. auto_calibrate", false, false);
 
   pangolin::Var<bool> resetButton("cp.Reset", false, false);
   pangolin::Var<bool> saveImg("cp.Save Image", false, false);
@@ -441,6 +469,30 @@ int main(int argc, char **argv) {
         std::cout << "fy changed to " << intrinsic_matrix_(1, 1) << std::endl;
       }
 
+      if (pangolin::Pushed(auto_calibrate)) {
+        cv::Mat img_undistorted;
+        AssignIntrinsicAndDistortion(intrinsic_matrix_, dist);   
+        cv::undistort(img, img_undistorted, global_K, global_D);
+        perception::CalibrationHandlerParam param = perception::getCalibrationHandlerParam(
+                                                                  calibration_matrix_,
+                                                                  img_undistorted,
+                                                                  lidar,
+                                                                  intrinsic_matrix_);
+        perception::CalibrationHandler<PointCloudType>::Ptr calibrationHandler(
+              new perception::CalibrationHandler<PointCloudType>(param));
+        auto transform = calibrationHandler->optimize();
+        Eigen::Affine3d affine = perception::toAffine(transform);
+        // 检查矩阵中是否包含NaN值
+        if (affine.matrix().array().isNaN().any()) {
+          std::cout << "The affine matrix contains NaN values." << std::endl;
+        } else{
+          calibration_matrix_ = affine.matrix();
+        }  
+        current_frame = projector.ProjectToRawImage(img, intrinsic_matrix_, dist,
+                                                    calibration_matrix_);
+        cout << "\nTransfromation Matrix:\n" << calibration_matrix_ << std::endl;
+      }
+
       if (pangolin::Pushed(resetButton)) {
         calibration_matrix_ = orign_calibration_matrix_;
         intrinsic_matrix_ = orign_intrinsic_matrix_;
@@ -480,6 +532,7 @@ int main(int argc, char **argv) {
   }
 
   // delete[] imageArray;
+  ros::shutdown();
 
   Eigen::Matrix4d transform = calibration_matrix_;
   cout << "\nFinal Transfromation Matrix:\n" << transform << std::endl;

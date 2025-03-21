@@ -1,29 +1,29 @@
 {
     "left_lidar-to-top_center_lidar-extrinsic": {
         "param_type": "extrinsic",
-        "sensor_name": "left_lidar",
-        "target_sensor_name": "top_center_lidar",
+        "sensor_name": "back_lidar",
+        "target_sensor_name": "right_lidar",
         "device_type": "relational",
         "param": {
             "sensor_calib": {
                 "data": [
                     [
-                        1,
-                        0,
-                        0,
-                        0
+                        1.0,
+                        0.0,
+                        0.0,
+                        0.0
                     ],
                     [
-                        0,
-                        1,
-                        0,
-                        0
+                        0.0,
+                        1.0,
+                        0.0,
+                        0.0
                     ],
                     [
-                        0,
-                        0,
-                        1,
-                        0
+                        0.0,
+                        0.0,
+                        1.0,
+                        0.0
                     ],
                     [
                         0,

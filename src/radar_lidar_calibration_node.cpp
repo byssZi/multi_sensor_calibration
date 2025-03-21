@@ -502,7 +502,7 @@ int main(int argc, char **argv)
     }
 
     // delete[] imageArray;
-
+    ros::shutdown();
     Eigen::Matrix4d transform = calibration_matrix_;
     cout << "\nFinal Transfromation Matrix:\n" << transform << std::endl;
     return 0;

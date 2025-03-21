@@ -168,7 +168,7 @@ bool ManualCalibration(int key_input) {
   return real_hit;
 }
 
-Eigen::Matrix4d AutoCalibration(const pcl::PointCloud<pcl::PointXYZI>::Ptr TargetLidar, const pcl::PointCloud<pcl::PointXYZI>::Ptr SourceLidar) {
+Eigen::Matrix4d AutoCalibration(const pcl::PointCloud<pcl::PointXYZI>::Ptr TargetLidar, const pcl::PointCloud<pcl::PointXYZI>::Ptr SourceLidar, const Eigen::Matrix4d &extrinsic) {
   // 创建一个新的点云对象，类型为 PointXYZ
   pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_target(new pcl::PointCloud<pcl::PointXYZ>);
     
@@ -192,12 +192,16 @@ Eigen::Matrix4d AutoCalibration(const pcl::PointCloud<pcl::PointXYZI>::Ptr Targe
   cloud_source->height = SourceLidar->height;
   cloud_source->is_dense = SourceLidar->is_dense;
   cloud_source->points.resize(SourceLidar->width * SourceLidar->height);
-    
+  
   // 遍历输入点云，复制坐标到输出点云
   for (size_t i = 0; i < SourceLidar->points.size(); ++i) {
-    cloud_source->points[i].x = SourceLidar->points[i].x;
-    cloud_source->points[i].y = SourceLidar->points[i].y;
-    cloud_source->points[i].z = SourceLidar->points[i].z;
+    Eigen::Vector4d pointPos(SourceLidar->points[i].x,
+                             SourceLidar->points[i].y,
+                             SourceLidar->points[i].z, 1.0);
+    Eigen::Vector4d trans_p = extrinsic * pointPos;
+    cloud_source->points[i].x = trans_p.x();
+    cloud_source->points[i].y = trans_p.y();
+    cloud_source->points[i].z = trans_p.z();
   }
 
  // 移除无效的点
@@ -492,7 +496,7 @@ int main(int argc, char **argv) {
     }
 
     if (pangolin::Pushed(auto_calibrate)) {    
-      Eigen::Matrix4d matrix_trans = AutoCalibration(target_lidar, source_lidar);
+      Eigen::Matrix4d matrix_trans = AutoCalibration(target_lidar, source_lidar, calibration_matrix_);
       calibration_matrix_ = matrix_trans * calibration_matrix_;
       ProcessSourceFrame(source_lidar, calibration_matrix_, display_mode_);
       cout << "\nTransfromation Matrix:\n" << calibration_matrix_ << std::endl;
@@ -559,7 +563,7 @@ int main(int argc, char **argv) {
   }
 
   // delete[] imageArray;
-
+  ros::shutdown();
   Eigen::Matrix4d transform = calibration_matrix_;
   cout << "\nFinal Transfromation Matrix:\n" << transform << std::endl;
 

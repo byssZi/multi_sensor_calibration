@@ -125,7 +125,7 @@ void CalibrationScaleChange() {
 }
 
 void saveResult(const cv::Mat &calib_img, const int &frame_id) {
-  std::string file_name = pkg_loc + "/data/lidar2camera_extrinsic_" + std::to_string(frame_id) + ".txt";
+  std::string file_name = pkg_loc + "/data/lidar2camera_extrinsic_calibration/lidar2camera_extrinsic_" + std::to_string(frame_id) + ".txt";
   std::ofstream fCalib(file_name);
   if (!fCalib.is_open()) {
     std::cerr << "open file " << file_name << " failed." << std::endl;
@@ -183,7 +183,7 @@ void saveResult(const cv::Mat &calib_img, const int &frame_id) {
   fCalib << "]";
   fCalib.close();
 
-  std::string img_name = pkg_loc + "/data/calibimg_" + std::to_string(frame_id) + ".jpg";
+  std::string img_name = pkg_loc + "/data/lidar2camera_extrinsic_calibration/calibimg_" + std::to_string(frame_id) + ".jpg";
   cv::imwrite(img_name, calib_img);
 }
 
@@ -349,6 +349,7 @@ int main(int argc, char **argv) {
   pangolin::Var<bool> addFy("cp.+ fy", false, false);
   pangolin::Var<bool> minusFy("cp.- fy", false, false);
 
+  pangolin::Var<bool> save_current_data("cp. save current data", false, false);
   pangolin::Var<bool> auto_calibrate("cp. auto_calibrate", false, false);
 
   pangolin::Var<bool> resetButton("cp.Reset", false, false);
@@ -370,6 +371,9 @@ int main(int argc, char **argv) {
 
   int frame_num = 0;
   Projector projector;
+
+  std::vector<cv::Mat> img_list;
+  std::vector<pcl::PointCloud<pcl::PointXYZI>> pcd_list;
 
   std::cout << "\n=>START\n";
   while (!pangolin::ShouldQuit()) {
@@ -468,15 +472,20 @@ int main(int argc, char **argv) {
                                                     calibration_matrix_);
         std::cout << "fy changed to " << intrinsic_matrix_(1, 1) << std::endl;
       }
-
-      if (pangolin::Pushed(auto_calibrate)) {
+      if (pangolin::Pushed(save_current_data)) {
         cv::Mat img_undistorted;
         AssignIntrinsicAndDistortion(intrinsic_matrix_, dist);   
         cv::undistort(img, img_undistorted, global_K, global_D);
+        img_list.push_back(img_undistorted);
+        pcd_list.push_back(pcd);
+        std::cout << "Save current data!\n";
+      }
+
+      if (pangolin::Pushed(auto_calibrate)) {
         perception::CalibrationHandlerParam param = perception::getCalibrationHandlerParam(
                                                                   calibration_matrix_,
-                                                                  img_undistorted,
-                                                                  lidar,
+                                                                  img_list,
+                                                                  pcd_list,
                                                                   intrinsic_matrix_);
         perception::CalibrationHandler<PointCloudType>::Ptr calibrationHandler(
               new perception::CalibrationHandler<PointCloudType>(param));
@@ -491,6 +500,8 @@ int main(int argc, char **argv) {
         current_frame = projector.ProjectToRawImage(img, intrinsic_matrix_, dist,
                                                     calibration_matrix_);
         cout << "\nTransfromation Matrix:\n" << calibration_matrix_ << std::endl;
+        img_list.clear();
+        pcd_list.clear();
       }
 
       if (pangolin::Pushed(resetButton)) {

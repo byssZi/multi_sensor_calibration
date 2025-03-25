@@ -122,7 +122,7 @@ void CalibrationScaleChange() {
 }
 
 void saveResult(const int &frame_id) {
-  std::string file_name = pkg_loc + "/data/radar2lidar_extrinsic_" + std::to_string(frame_id) + ".txt";
+  std::string file_name = pkg_loc + "/data/radar2lidar_extrinsic_calibration/radar2lidar_extrinsic_" + std::to_string(frame_id) + ".txt";
   std::ofstream fCalib(file_name);
   if (!fCalib.is_open()) {
     std::cerr << "open file " << file_name << " failed." << std::endl;

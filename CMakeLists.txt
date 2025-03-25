@@ -302,3 +302,19 @@ target_link_libraries(lidar_imu_calibration_node
   ceres
 )
 add_dependencies(lidar_imu_calibration_node  ${PROJECT_NAME}_generate_messages_cpp)
+
+add_executable(camera_intrinsic_calibration_node src/camera_intrinsic_calibration_node.cpp
+                                             include/autocalib/camera_intrinsic/CalibrationHandler.cpp
+                                             include/autocalib/camera_intrinsic/Extrinsics.cpp
+                                             include/autocalib/camera_intrinsic/Homography.cpp
+                                             include/autocalib/camera_intrinsic/LensDistortionModel.cpp
+                                             include/autocalib/camera_intrinsic/TotalRefinement.cpp
+                                             include/autocalib/camera_intrinsic/Undistortion.cpp
+                                             include/autocalib/camera_intrinsic/utils/CalibUtils.cpp)
+target_link_libraries(camera_intrinsic_calibration_node 
+  jsoncpp_lib 
+  ${Pangolin_LIBRARIES} 
+  ${OpenCV_LIBS} 
+  ${catkin_LIBRARIES}
+  ceres
+)

@@ -5,20 +5,28 @@ CalibrationHandler<POINT_CLOUD_TYPE>::CalibrationHandler(const CalibrationHandle
     : m_param(param)
     , m_initialGuess(TransformInfo::Identity())
 {
+    if (param.Images.size() != param.PointClouds.size()) {
+        throw std::runtime_error("number of images and point clouds must be the same");
+    }
+
+    if (param.Images.empty()) {
+        throw std::runtime_error("empty calibration data");
+    }
+
 
     m_initialGuess = perception::getTransformInfo(m_param.InitialGuess);
 
-    const int numSamples = 1;
-    m_colorImgs.reserve(1);
-    m_grayImgs.reserve(1);
-    m_poinclouds.reserve(1);
+    const int numSamples = param.Images.size();
+    m_colorImgs.reserve(numSamples);
+    m_grayImgs.reserve(numSamples);
+    m_poinclouds.reserve(numSamples);
 
     cv::Mat colorImg, grayImg;
-    PointCloudPtr inCloud(new PointCloud(m_param.PointClouds));
 
     for (int i = 0; i < numSamples; ++i) {
 
-        colorImg = m_param.Images;
+        colorImg = m_param.Images[i];
+        PointCloudPtr inCloud(new PointCloud(m_param.PointClouds[i]));
 
         if (m_param.filterInputImage) {
             cv::Mat filtered;

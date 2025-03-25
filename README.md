@@ -1,6 +1,6 @@
 # multi_sensor_calibration
 
-一个ros下用于手动-自动结合调整x,y,z,roll,pitch,yaw动态标定lidar，radar，camera的工程，分别为lidar2lidar，radar2lidar，lidar2camera，radar2camera，lidar2imu
+一个ros下用于手动-自动结合调整x,y,z,roll,pitch,yaw动态标定lidar，radar，camera的工程，分别为lidar2lidar，radar2lidar，lidar2camera，radar2camera，lidar2imu，cameraintrinsic
 
 # 环境准备
 
@@ -18,6 +18,7 @@ catkin_make
 source devel/setup.bash
 ```
 ## Step2
+在`/data/extrinsic_lidar2lidar.json`中填入source_lidar到target_lidar的初始外参。</br>
 发布target_lidar与source_lidar的ros话题，格式均为sensor_msgs::PointCloud2格式，修改launch文件下对应target_lidar与source_lidar话题。
 ```bash
 roslaunch multi_sensor_calibration calibration.launch calib_lidar2lidar:=true
@@ -35,7 +36,7 @@ roslaunch multi_sensor_calibration calibration.launch calib_lidar2lidar:=true
    |     +y trans     |       t        |     -y trans     |       g        |
    |     +z trans     |       y        |     -z trans     |       h        |
 
-   ```Intensity Color```:  此按钮可以将显示模式更改为强度图显示模式。这有助于检查地面车道线是否对齐。
+   ``Intensity Color``:  此按钮可以将显示模式更改为强度图显示模式。这有助于检查地面车道线是否对齐。
 
    ``deg step`` ``t step `` :  这两个按钮更改每次单击或键盘输入的调整步骤。
 
@@ -54,6 +55,7 @@ catkin_make
 source devel/setup.bash
 ```
 ## Step2
+在`/data/extrinsic_radar2lidar.json`中填入radar到lidar的初始外参。</br>
 发布lidar与radar的ros话题，lidar格式为sensor_msgs::PointCloud2格式，radar格式为visualization_msgs::MarkerArray，修改launch文件下对应lidar与radar话题名称。
 ```bash
 roslaunch multi_sensor_calibration calibration.launch calib_radar2lidar:=true
@@ -71,7 +73,7 @@ roslaunch multi_sensor_calibration calibration.launch calib_radar2lidar:=true
    |     +y trans     |       t        |     -y trans     |       g        |
    |     +z trans     |       y        |     -z trans     |       h        |
 
-   ```Intensity Color```:  此按钮可以将显示模式更改为强度图显示模式。这有助于检查地面车道线是否对齐。
+   ``Intensity Color``:  此按钮可以将显示模式更改为强度图显示模式。这有助于检查地面车道线是否对齐。
 
    ``deg step`` ``t step `` :  这两个按钮更改每次单击或键盘输入的调整步骤。
 
@@ -91,6 +93,7 @@ catkin_make
 source devel/setup.bash
 ```
 ## Step2
+在`/data/extrinsic_lidar2camera.json`中填入lidar到camera的初始外参，并在`/data/intrinsic_camera.json`中填入相机内参。</br>
 发布camera与lidar的ros话题，camera格式为sensor_msgs::Image，lidar格式为sensor_msgs::PointCloud2，修改launch文件下对应camera与lidar话题。
 ```bash
 roslaunch multi_sensor_calibration calibration.launch calib_lidar2camera:=true
@@ -113,15 +116,17 @@ roslaunch multi_sensor_calibration calibration.launch calib_lidar2camera:=true
    |       + fy       |       i        |       - fy       |       k        |
    |       + fx       |       u        |       - fx       |       j        |
 
-   ```Intensity Color```:  此按钮可以将显示模式更改为强度图显示模式。这有助于检查地面车道线是否对齐。
+   ``Intensity Color``:  此按钮可以将显示模式更改为强度图显示模式。这有助于检查地面车道线是否对齐。
 
-   ```Overlap Filter```:  消除重叠的激光雷达点 
+   ``Overlap Filter``:  消除重叠的激光雷达点 
 
    ``deg step`` ``t step `` ``fxfy scale`` :  这三个按钮更改每次单击或键盘输入的调整步骤。
 
    ``point size``: 调整激光雷达点云投影到图像上的大小
 
-   ``auto_calibrate``:  用于点云图像自动标定
+   ``save current data``: 保存当前帧点云和图像（用于自动标定用，自动标定需截取单帧或多帧不同场景下的数据）
+
+   ``auto_calibrate``:  用于点云图像自动标定（标定结果精度依赖于保存的当前帧点云和图像，一般取多帧不同场景的数据为佳）
 
    ``Reset``:  按下按钮重置所有手动调整
 
@@ -134,6 +139,7 @@ catkin_make
 source devel/setup.bash
 ```
 ## Step2
+在`/data/extrinsic_radar2camera.json`中填入radar到camera的初始外参，在`/data/intrinsic_camera.json`中填入相机内参，最后在`/data/camera_homography.json`填入相机像素点坐标与对应bev视角下的点坐标，用于计算单应性矩阵。</br>
 发布camera与radar的ros话题，camera格式为sensor_msgs::Image，radar格式为visualization_msgs::MarkerArray，修改launch文件下对应camera与radar话题。
 ```bash
 roslaunch multi_sensor_calibration calibration.launch calib_radar2camera:=true
@@ -168,6 +174,7 @@ catkin_make
 source devel/setup.bash
 ```
 ## Step2
+在`/data/extrinsic_lidar2imu.json`中填入lidar到imu的初始外参。
 发布lidar与imu的ros话题，格式如下:</br>
 imu话题：CGI610GNSSMsg自定义消息</br>
 lidar点云话题：sensor_msgs::PointCloud2
@@ -207,5 +214,28 @@ roslaunch multi_sensor_calibration calibration.launch calib_lidar2imu:=true
    ``Show All Point``: 显示点云建图结果
 
    ``Reset``:  按下按钮重置所有手动调整
+
+   ``Save Result``:  用于保存标定结果
+
+# camera_intrinsic
+## Step1
+```bash
+catkin_make
+source devel/setup.bash
+```
+## Step2
+在`/data/camera_intrinsic_calibration_config.json`中填入用于相机内参标定的棋盘格参数。</br>
+发布camera的ros话题，camera格式为sensor_msgs::Image。
+```bash
+roslaunch multi_sensor_calibration calibration.launch calib_camera_intrinsic:=true
+```
+## Step3
+播放用于标定的rosbag包,进入标定界面：</br>
+标定界面由用于手动校准的左侧控制面板和右侧图像界面组成.</br>
+   ``save current data``:  此按钮用于采集内参标定用图像。
+
+   ``auto_calibrate``:  用于内参自动标定（需采集不同角度多张图像）
+
+   ``show undistort``:  用于将标定后图像去畸变的结果进行保存
 
    ``Save Result``:  用于保存标定结果

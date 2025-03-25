@@ -115,7 +115,7 @@ void CalibrationScaleChange() {
 
 void saveResult(const cv::Mat &calib_img, const cv::Mat &bv_img,
                 const int &frame_id) {
-  std::string file_name = pkg_loc + "/data/radar2camera_extrinsic_" + std::to_string(frame_id) + ".txt";
+  std::string file_name = pkg_loc + "/data/radar2camera_extrinsic_calibration/radar2camera_extrinsic_" + std::to_string(frame_id) + ".txt";
   std::ofstream fCalib(file_name);
   if (!fCalib.is_open()) {
     std::cerr << "open file " << file_name << " failed." << std::endl;
@@ -173,10 +173,10 @@ void saveResult(const cv::Mat &calib_img, const cv::Mat &bv_img,
   fCalib << "]";
   fCalib.close();
 
-  std::string img_name = pkg_loc + "/data/calibimg_" + std::to_string(frame_id) + ".jpg";
+  std::string img_name = pkg_loc + "/data/radar2camera_extrinsic_calibration/calibimg_" + std::to_string(frame_id) + ".jpg";
   cv::imwrite(img_name, calib_img);
 
-  std::string bv_img_name = pkg_loc + "/data/calibimg_bv_" + std::to_string(frame_id) + ".jpg";
+  std::string bv_img_name = pkg_loc + "/data/radar2camera_extrinsic_calibration/calibimg_bv_" + std::to_string(frame_id) + ".jpg";
   cv::imwrite(bv_img_name, bv_img);
 }
 

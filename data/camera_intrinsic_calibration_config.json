@@ -1,0 +1,7 @@
+{
+    "camera_calibration": {
+      "num_row": 7,
+      "num_col": 7,
+      "square_size": 0.025
+    }
+  }

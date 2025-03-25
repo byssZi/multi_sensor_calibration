@@ -5,15 +5,15 @@
 namespace perception
 {
 CalibrationHandlerParam getCalibrationHandlerParam(const Eigen::Matrix4d& InitialGuess,
-                                                   const cv::Mat& Images,
-                                                   const pcl::PointCloud<pcl::PointXYZI>::Ptr PointClouds,
+                                                   const std::vector<cv::Mat>& Images,
+                                                   const std::vector<pcl::PointCloud<pcl::PointXYZI>>& PointClouds,
                                                    const Eigen::Matrix3d& CameraInfo)
 {
     CalibrationHandlerParam param;
 
     param.InitialGuess = InitialGuess;
     param.Images = Images;
-    param.PointClouds = *PointClouds;
+    param.PointClouds = PointClouds;
     param.CameraInfo = CameraInfo;
 
     param.numBins = 256;

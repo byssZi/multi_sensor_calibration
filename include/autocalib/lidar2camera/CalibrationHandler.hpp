@@ -20,8 +20,8 @@ namespace perception
 {
 struct CalibrationHandlerParam {
     Eigen::Matrix4d InitialGuess = Eigen::Matrix4d::Identity();
-    cv::Mat Images;
-    pcl::PointCloud<pcl::PointXYZI> PointClouds;
+    std::vector<cv::Mat> Images;
+    std::vector<pcl::PointCloud<pcl::PointXYZI>> PointClouds;
     Eigen::Matrix3d CameraInfo = Eigen::Matrix3d::Identity();
     int numBins = 256;
 
@@ -60,8 +60,8 @@ struct CalibrationHandlerParam {
 };
 
 CalibrationHandlerParam getCalibrationHandlerParam(const Eigen::Matrix4d& InitialGuess,
-                                                   const cv::Mat& Images,
-                                                   const pcl::PointCloud<pcl::PointXYZI>::Ptr PointClouds,
+                                                   const std::vector<cv::Mat>& Images,
+                                                   const std::vector<pcl::PointCloud<pcl::PointXYZI>>& PointClouds,
                                                    const Eigen::Matrix3d& CameraInfo);
 
 template <typename POINT_CLOUD_TYPE> class CalibrationHandler

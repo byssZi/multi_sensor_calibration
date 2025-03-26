@@ -10,6 +10,7 @@
 #include <pcl_ros/transforms.h>
 #include <pcl/io/pcd_io.h>
 #include <pcl/conversions.h>
+#include <pcl/filters/voxel_grid.h>
 
 #include <opencv2/opencv.hpp>
 #include <opencv2/highgui/highgui.hpp>
@@ -28,6 +29,9 @@
 #include "intrinsic_param.hpp"
 #include "projector_lidar.hpp"
 #include "autocalib/lidar2camera/sensors_calib.hpp"
+#include "autocalib/lidar2cameraV2/Calibrator.hpp"
+#include "autocalib/lidar2cameraV2/Core.hpp"
+#include "autocalib/lidar2cameraV2/Rand.hpp"
 
 using namespace std;
 namespace
@@ -351,6 +355,7 @@ int main(int argc, char **argv) {
 
   pangolin::Var<bool> save_current_data("cp. save current data", false, false);
   pangolin::Var<bool> auto_calibrate("cp. auto_calibrate", false, false);
+  pangolin::Var<bool> auto_calibrate_v2("cp. auto_calibrate_v2", false, false);
 
   pangolin::Var<bool> resetButton("cp.Reset", false, false);
   pangolin::Var<bool> saveImg("cp.Save Image", false, false);
@@ -496,6 +501,57 @@ int main(int argc, char **argv) {
           std::cout << "The affine matrix contains NaN values." << std::endl;
         } else{
           calibration_matrix_ = affine.matrix();
+        }  
+        current_frame = projector.ProjectToRawImage(img, intrinsic_matrix_, dist,
+                                                    calibration_matrix_);
+        cout << "\nTransfromation Matrix:\n" << calibration_matrix_ << std::endl;
+        img_list.clear();
+        pcd_list.clear();
+      }
+
+      if (pangolin::Pushed(auto_calibrate_v2)) {
+        alcc::Calibrator calibrator;
+        float fx, fy, cx, cy;
+        fx = intrinsic_matrix_(0,0);
+        fy = intrinsic_matrix_(1,1);
+        cx = intrinsic_matrix_(0,2);
+        cy = intrinsic_matrix_(1,2);
+        calibrator.SetCameraIntrinsic(fx*0.3f , fy*0.3f , cx*0.3f , cy*0.3f);
+        int frame_number = img_list.size();
+        calibrator.SetMaxFrameNum(frame_number);
+        for(int i = 0; i < img_list.size(); i++){//加快运算
+          cv::resize(img_list[i], img_list[i], cv::Size(), 0.3, 0.3);
+          pcl::VoxelGrid<pcl::PointXYZI> vg;
+          pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_filtered(new pcl::PointCloud<pcl::PointXYZI>);
+          pcl::PointCloud<pcl::PointXYZI>::Ptr pcd(new pcl::PointCloud<pcl::PointXYZI>(pcd_list[i]));
+          vg.setInputCloud(pcd);
+          vg.setLeafSize(0.2, 0.2, 0.2);
+          vg.filter(*cloud_filtered);
+          calibrator.AddDataFrame(cloud_filtered, img_list[i]);
+        }
+        Eigen::Isometry3f origin_extri = Eigen::Isometry3f::Identity();
+        origin_extri.matrix() = calibration_matrix_.cast<float>();
+        // Miscalibration detection
+        // score in [0.0 - 1.0], higher is better
+        float score_origin = calibrator.MiscalibrationDetection(origin_extri);
+        std::cout<< "Matrix before autocalib is : "<<std::endl;
+        std::cout<< origin_extri.matrix()<<std::endl;
+        std::cout<< "Score before calib is : "<< score_origin <<std::endl;
+
+        // Track calibration
+        int iteration_number = 10;
+        Eigen::Isometry3f result;
+        calibrator.CalibrationTrack(origin_extri, result, iteration_number);
+
+        float score_after = calibrator.MiscalibrationDetection(result);
+        std::cout<< "Matrix after autocalib is : "<< std::endl;
+        std::cout<< origin_extri.matrix()<<std::endl;
+        std::cout<< "Score after calib is : "<< score_after <<std::endl;
+        // 检查矩阵中是否包含NaN值
+        if (result.matrix().array().isNaN().any()) {
+          std::cout << "The affine matrix contains NaN values." << std::endl;
+        } else{
+          calibration_matrix_ = result.matrix().cast<double>();
         }  
         current_frame = projector.ProjectToRawImage(img, intrinsic_matrix_, dist,
                                                     calibration_matrix_);

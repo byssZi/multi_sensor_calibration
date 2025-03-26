@@ -275,7 +275,13 @@ add_executable(lidar_camera_calibration_node src/lidar_camera_calibration_node.c
                                              include/autocalib/lidar2camera/HistogramHandler.cpp
                                              include/autocalib/lidar2camera/ProbabilityHandler.cpp
                                              include/autocalib/lidar2camera/Types.cpp
-                                             include/autocalib/lidar2camera/utils/Utility.cpp)
+                                             include/autocalib/lidar2camera/utils/Utility.cpp
+                                             include/autocalib/lidar2cameraV2/Calibrator.cc
+                                             include/autocalib/lidar2cameraV2/Constants.cc
+                                             include/autocalib/lidar2cameraV2/Core.cc
+                                             include/autocalib/lidar2cameraV2/Rand.cc
+                                             include/autocalib/lidar2cameraV2/StopWatch.cc
+                                             include/autocalib/lidar2cameraV2/Types.cc)
 target_link_libraries(lidar_camera_calibration_node 
   jsoncpp_lib 
   ${PCL_LIBRARIES} 

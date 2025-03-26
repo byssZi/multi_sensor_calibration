@@ -128,6 +128,8 @@ roslaunch multi_sensor_calibration calibration.launch calib_lidar2camera:=true
 
    ``auto_calibrate``:  用于点云图像自动标定（标定结果精度依赖于保存的当前帧点云和图像，一般取多帧不同场景的数据为佳）
 
+   ``auto_calibrate_v2``:  第二种用于点云图像自动标定的方法（该方法标定时间较长，适用于第一种标定方法不适用的场景）
+
    ``Reset``:  按下按钮重置所有手动调整
 
    ``Save Result``:  用于保存标定结果

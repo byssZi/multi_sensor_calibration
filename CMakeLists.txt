@@ -35,7 +35,9 @@ find_package(jsoncpp REQUIRED)
 find_package(OpenCV 4.2.0 REQUIRED)
 
 add_subdirectory(ceres)
+add_subdirectory(geographiclib-2.1.2)
 include_directories(${PROJECT_SOURCE_DIR}/ceres/include)
+include_directories(${PROJECT_SOURCE_DIR}/geographiclib-2.1.2/include)
 
 
 
@@ -306,6 +308,7 @@ target_link_libraries(lidar_imu_calibration_node
   ${Pangolin_LIBRARIES}
   jsoncpp_lib
   ceres
+  GeographicLib
 )
 add_dependencies(lidar_imu_calibration_node  ${PROJECT_NAME}_generate_messages_cpp)
 
@@ -323,4 +326,5 @@ target_link_libraries(camera_intrinsic_calibration_node
   ${OpenCV_LIBS} 
   ${catkin_LIBRARIES}
   ceres
+  GeographicLib
 )

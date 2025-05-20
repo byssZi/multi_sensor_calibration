@@ -36,6 +36,8 @@
 #include "autocalib/lidar2imu/common/Lidar_parser_base.h"
 #include "ceres/ceres.h"
 #include "ceres/rotation.h"
+#include "GeographicLib/UTMUPS.hpp"
+#include <cmath> // 包含 M_PI
 
 using namespace std;
 
@@ -46,6 +48,7 @@ string pkg_loc;
 
 std::vector<pcl::PointCloud<LidarPointXYZIRT>> pcds;
 std::vector<Eigen::Matrix4d> lidar_poses;
+std::vector<Eigen::Matrix4d> lidar_poses_imu;
 
 pangolin::GlBuffer *source_vertexBuffer_;
 pangolin::GlBuffer *source_colorBuffer_;
@@ -262,7 +265,7 @@ int ProcessAllLidarFrame(const std::vector<pcl::PointCloud<LidarPointXYZIRT>> &p
     *cloud = pcds[i];
     //       (T world<-imu0 * T imu <-lidar).inverse)                                (T world<-imu * T imu <-lidar )
     // T lidar0 <- lidar  =    T lidar0<-world                                  *               T world<-lidar                                                                      
-    Eigen::Matrix4d T = (lidar_poses[0] * calibration_matrix_).inverse().eval() * (lidar_poses[i] * calibration_matrix_);
+    Eigen::Matrix4d T = lidar_poses[0].inverse().eval() * lidar_poses[i] * calibration_matrix_;
     for (const auto &src_pt : cloud->points) {
       if (!std::isfinite(src_pt.x) || !std::isfinite(src_pt.y) ||
           !std::isfinite(src_pt.z))
@@ -334,7 +337,7 @@ int ProcessLidarFrame(const std::vector<pcl::PointCloud<LidarPointXYZIRT>> &pcds
                       const bool &diaplay_mode) {
   if(pcds.size() <= 10){
     for (size_t i = 0; i < pcds.size(); i++) {
-      Eigen::Matrix4d T = (lidar_poses[0] * calibration_matrix_).inverse().eval() * (lidar_poses[i] * calibration_matrix_);
+      Eigen::Matrix4d T = lidar_poses[0].inverse().eval() * lidar_poses[i] * calibration_matrix_;
 
       for (const auto &src_pt : pcds[i].points) {
         if (!std::isfinite(src_pt.x) || !std::isfinite(src_pt.y) ||
@@ -362,7 +365,7 @@ int ProcessLidarFrame(const std::vector<pcl::PointCloud<LidarPointXYZIRT>> &pcds
   }
   else{
     for (size_t i = pcds.size()-10; i < pcds.size(); i++) {
-      Eigen::Matrix4d T = (lidar_poses[0] * calibration_matrix_).inverse().eval() * (lidar_poses[i] * calibration_matrix_);
+      Eigen::Matrix4d T = lidar_poses[0].inverse().eval() * lidar_poses[i] * calibration_matrix_;
 
       for (const auto &src_pt : pcds[i].points) {
         if (!std::isfinite(src_pt.x) || !std::isfinite(src_pt.y) ||
@@ -457,7 +460,7 @@ Eigen::Matrix4d GetDeltaTrans(double R[3], double t[3]) {
 
 Eigen::Matrix4d AutoCalibration(std::vector<pcl::PointCloud<LidarPointXYZIRT>> &pcds,
                       std::vector<Eigen::Matrix4d> &lidar_poses, Eigen::Matrix4d &calibration_matrix) {
-    if(pcds.size() < 500){
+    if(pcds.size() < 30){
       std::cout << "The number of frames is less than 500, please check the data!" << std::endl;
       return calibration_matrix;
     }
@@ -621,13 +624,25 @@ void CalibCallback(const sensor_msgs::PointCloud2::ConstPtr& lidar_msg,
     if(pcds.size() < 1000){
       pcds.emplace_back(*filter_cloud_roi);
     }
-
+    double easting, northing;
+    int zone;
+    bool northp;
+    GeographicLib::UTMUPS::Forward(imu_msg->PosLat, imu_msg->PosLon, zone, northp, easting, northing);
+    std::cout<<"PosLat: "<< imu_msg->PosLat << " PosLon: " << imu_msg->PosLon << std::endl;
+    std::cout<<"easting: "<< easting << " northing: " << northing << std::endl;
+    float yaw_deg =  imu_msg->AngleHeading;  //转换为东基准逆时针
+    float pitch_deg = imu_msg->AnglePitch;
+    float roll_deg = imu_msg->AngleRoll;
+    std::cout<<"yaw_deg: "<< yaw_deg << " pitch_deg: " << pitch_deg << " roll_deg: " << roll_deg << std::endl;
+    float yaw = yaw_deg * M_PI / 180.0;
+    float pitch = pitch_deg * M_PI / 180.0;
+    float roll = roll_deg * M_PI / 180.0;
 
     Eigen::Affine3d transform_ = Eigen::Affine3d::Identity();
-    transform_.rotate(Eigen::AngleAxisd(imu_msg->AngleHeading, Eigen::Vector3d::UnitZ()));
-    transform_.rotate(Eigen::AngleAxisd(imu_msg->AnglePitch, Eigen::Vector3d::UnitY()));
-    transform_.rotate(Eigen::AngleAxisd(imu_msg->AngleRoll, Eigen::Vector3d::UnitX()));
-    transform_.translation() << imu_msg->PosLat, imu_msg->PosLon, imu_msg->PosAlt;
+    transform_.rotate(Eigen::AngleAxisd(yaw, Eigen::Vector3d::UnitZ()));
+    transform_.rotate(Eigen::AngleAxisd(pitch, Eigen::Vector3d::UnitY()));
+    transform_.rotate(Eigen::AngleAxisd(roll, Eigen::Vector3d::UnitX()));
+    transform_.translation() << easting, northing, imu_msg->PosAlt;
     Eigen::Matrix4d transform_matrix = transform_.matrix();
     
 

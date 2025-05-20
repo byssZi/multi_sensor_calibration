@@ -15,15 +15,15 @@
 
     <group if="$(arg calib_lidar2lidar)">
     <node pkg="multi_sensor_calibration" type="lidar_lidar_calibration_node" name="dynamic_calibration" output="screen" >
-        <param name="target_lidar_topic" value="/ns3/zvision_lidar_points"/>
-        <param name="source_lidar_topic" value="/ns4/zvision_lidar_points"/>
+        <param name="target_lidar_topic" value="/PCD_DATA0"/>
+        <param name="source_lidar_topic" value="/PCD_DATA2"/>
     </node>
     </group>
 
     <group if="$(arg calib_lidar2camera)">
     <node pkg="multi_sensor_calibration" type="lidar_camera_calibration_node" name="dynamic_calibration" output="screen" >
-        <param name="lidar_topic" value="/middle/rslidar_points"/>
-        <param name="camera_topic" value="/1/FrontLeftpubmsg/camera/image"/>
+        <param name="lidar_topic" value="/PCD_DATA0"/>
+        <param name="camera_topic" value="/IMG_DATA0"/>
     </node>
     </group>
 
@@ -36,14 +36,14 @@
 
     <group if="$(arg calib_lidar2imu)">
     <node pkg="multi_sensor_calibration" type="lidar_imu_calibration_node" name="dynamic_calibration" output="screen" >
-        <param name="lidar_topic" value="/middle/rslidar_points"/>
-        <param name="imu_topic" value="/CGI610_GNSS"/>
+        <param name="lidar_topic" value="/PCD_DATA0"/>
+        <param name="imu_topic" value="/INS_DATA"/>
     </node>
     </group>
 
     <group if="$(arg calib_camera_intrinsic)">
     <node pkg="multi_sensor_calibration" type="camera_intrinsic_calibration_node" name="dynamic_calibration" output="screen" >
-        <param name="camera_topic" value="/image_topic"/>
+        <param name="camera_topic" value="/4/FrontLeftpubmsg/camera/image"/>
     </node>
     </group>
 </launch>

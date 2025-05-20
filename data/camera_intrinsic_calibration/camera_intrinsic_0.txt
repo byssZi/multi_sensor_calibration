@@ -1,0 +1,6 @@
+Camera Intrinsic Matrix (K):
+1233.97 1.2946 953.705
+0 1236.73 503.253
+0 0 1
+Distortion Coefficients:
+-0.370069 0.109748 

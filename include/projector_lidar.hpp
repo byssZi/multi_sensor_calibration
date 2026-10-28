@@ -13,14 +13,14 @@
 #define OVERLAP_FILTER_WINDOW 4
 #define OVERLAP_DEPTH_TH 0.4 // 0.4m
 
-struct Pt {
+struct LidarPt {
   cv::Point point;
   float dist;
   float z;
   float intensity;
 };
 
-class Projector {
+class LidarProjector {
 public:
   cv::Mat oriCloud;
   std::vector<float> intensitys;
@@ -118,7 +118,7 @@ public:
     cv::Mat projCloud2d = K * (R_ * oriCloud + repeat(T_, 1, oriCloud.cols));
     float maxDist = 0;
     float maxIntensity = 0;
-    std::vector<Pt> points;
+    std::vector<LidarPt> points;
     std::vector<std::vector<int>> filter_pts(img.rows,
                                              std::vector<int>(img.cols, -1));
 
@@ -134,7 +134,7 @@ public:
       if (x2d >= 0 && y2d >= 0 && x2d < img.cols && y2d < img.rows && z > 0) {
         maxDist = std::max(maxDist, d);
         maxIntensity = std::max(maxIntensity, intensity);
-        points.push_back(Pt{cv::Point(x2d, y2d), d, z, intensity});
+        points.push_back(LidarPt{cv::Point(x2d, y2d), d, z, intensity});
         // add size
         if (filter_pts[y2d][x2d] != -1) {
           int32_t p_idx = filter_pts[y2d][x2d];
@@ -186,7 +186,7 @@ public:
       }
     } else {
       sort(points.begin(), points.end(),
-           [](const Pt &a, const Pt &b) { return a.dist > b.dist; });
+           [](const LidarPt &a, const LidarPt &b) { return a.dist > b.dist; });
       for (size_t i = 0; i < points.size(); ++i) {
         cv::Scalar color;
         if (intensity_color_) {
@@ -272,7 +272,7 @@ public:
     float maxDist = 0;
     float maxIntensity = 0;
 
-    std::vector<Pt> points;
+    std::vector<LidarPt> points;
     for (int32_t i = 0; i < projCloud2d.cols; ++i) {
       float x = projCloud2d.at<float>(0, i);
       float y = projCloud2d.at<float>(1, i);
@@ -284,11 +284,11 @@ public:
       if (x2d >= 0 && y2d >= 0 && x2d < img.cols && y2d < img.rows && z > 0) {
         maxDist = std::max(maxDist, d);
         maxIntensity = std::max(maxIntensity, intensity);
-        points.push_back(Pt{cv::Point(x2d, y2d), d, z, intensity});
+        points.push_back(LidarPt{cv::Point(x2d, y2d), d, z, intensity});
       }
     }
     sort(points.begin(), points.end(),
-         [](const Pt &a, const Pt &b) { return a.dist > b.dist; });
+         [](const LidarPt &a, const LidarPt &b) { return a.dist > b.dist; });
     for (int32_t i = 0; i < static_cast<int32_t>(points.size()); ++i) {
       cv::Scalar color;
       if (intensity_color_) {

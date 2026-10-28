@@ -11,7 +11,7 @@
 #include "birdview.hpp"
 #include "pcl/io/pcd_io.h"
 
-struct Pt {
+struct RadarPt {
   cv::Point point;
   float dist;
   float x;
@@ -81,7 +81,7 @@ public:
   }
 };
 
-class Projector {
+class RadarProjector {
 public:
   cv::Mat oriCloud;
   // std::vector<float> intensitys;
@@ -93,7 +93,19 @@ public:
   void init(const cv::Mat &img, const Eigen::Matrix3d &homograph,
             const int &bv_w, const int &bv_h) {
     homograph_ = homograph;
-    bv_handler.init(img, bv_w, bv_h, homograph);
+    // default ground region; the lane-point picking in the Pangolin view
+    // later refines this via initFromImagePoints()
+    bv_handler.initAuto(img, bv_w, bv_h, homograph);
+  }
+
+  // Refine the bird view from 4 lane points picked in the image (order:
+  // left-down, left-up, right-down, right-up).
+  bool initFromImagePoints(const cv::Mat &img, const Eigen::Matrix3d &homograph,
+                           const int &bv_w, const int &bv_h,
+                           const std::vector<cv::Point2f> &picked_pts) {
+    homograph_ = homograph;
+    return bv_handler.initFromImagePoints(img, bv_w, bv_h, homograph,
+                                          picked_pts);
   }
 
   void ROIFilter() {
@@ -165,7 +177,7 @@ public:
                        cv::Mat &current_frame, cv::Mat &bv_frame) {
     cv::Mat I = cv::Mat::eye(3, 3, CV_32FC1);
     cv::Mat mapX, mapY;
-    cv::Mat outImg = cv::Mat(img.size(), CV_32FC3);
+    cv::Mat outImg = cv::Mat(img.size(), CV_8UC3);  // 8U: remap needs src type, texture uploads raw bytes
     cv::initUndistortRectifyMap(K, D, I, K, img.size(), CV_32FC1, mapX, mapY);
     cv::remap(img, outImg, mapX, mapY, cv::INTER_LINEAR);
     cv::Mat dist = oriCloud.rowRange(0, 1).mul(oriCloud.rowRange(0, 1)) +
@@ -184,7 +196,7 @@ public:
     cv::Mat transCloud2d = R_ * oriCloud + repeat(T_, 1, oriCloud.cols);
     float maxDist = 0;
     float maxx = 0;
-    std::vector<Pt> points;
+    std::vector<RadarPt> points;
     std::vector<cv::Point2f> bv_radar_pts;
     for (int32_t i = 0; i < transCloud2d.cols; ++i) {
       float x = transCloud2d.at<float>(0, i);
@@ -202,7 +214,7 @@ public:
       if (x2d >= 0 && y2d >= 0 && x2d < img.cols && y2d < img.rows && z > 0) {
         maxx = std::max(maxx, std::fabs(x));
         maxDist = std::max(maxDist, d);
-        points.push_back(Pt{cv::Point(x2d, y2d), d, std::fabs(x)});
+        points.push_back(RadarPt{cv::Point(x2d, y2d), d, std::fabs(x)});
         bv_radar_pts.push_back(cv::Point2f(x, z));
       }
     }
@@ -210,7 +222,7 @@ public:
     bv_frame = bv_handler.drawProjectBirdView(point_size_, bv_radar_pts);
 
     sort(points.begin(), points.end(),
-         [](const Pt &a, const Pt &b) { return a.dist > b.dist; });
+         [](const RadarPt &a, const RadarPt &b) { return a.dist > b.dist; });
     for (size_t i = 0; i < points.size(); ++i) {
       cv::Scalar color;
       // distance
@@ -278,7 +290,7 @@ public:
                               cv::Mat T) {
     cv::Mat I = cv::Mat::eye(3, 3, CV_32FC1);
     cv::Mat mapX, mapY;
-    cv::Mat outImg = cv::Mat(img.size(), CV_32FC3);
+    cv::Mat outImg = cv::Mat(img.size(), CV_8UC3);  // 8U: remap needs src type, texture uploads raw bytes
     // if broader view needed, change the new_K and new_Size
     cv::fisheye::initUndistortRectifyMap(K, D, I, K, img.size(), CV_32FC1, mapX,
                                          mapY);
@@ -296,7 +308,7 @@ public:
     cv::Mat projCloud2d = K * (R_ * oriCloud + repeat(T_, 1, oriCloud.cols));
     float maxDist = 0;
 
-    std::vector<Pt> points;
+    std::vector<RadarPt> points;
     for (int32_t i = 0; i < projCloud2d.cols; ++i) {
       float x = projCloud2d.at<float>(0, i);
       float y = projCloud2d.at<float>(1, i);
@@ -306,11 +318,11 @@ public:
       float d = sqrt(dist.at<float>(0, i));
       if (x2d >= 0 && y2d >= 0 && x2d < img.cols && y2d < img.rows && z > 0) {
         maxDist = std::max(maxDist, d);
-        points.push_back(Pt{cv::Point(x2d, y2d), d});
+        points.push_back(RadarPt{cv::Point(x2d, y2d), d});
       }
     }
     sort(points.begin(), points.end(),
-         [](const Pt &a, const Pt &b) { return a.dist > b.dist; });
+         [](const RadarPt &a, const RadarPt &b) { return a.dist > b.dist; });
     for (int32_t i = 0; i < static_cast<int32_t>(points.size()); ++i) {
       cv::Scalar color;
       // distance

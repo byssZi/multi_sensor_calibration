@@ -1,49 +1,7 @@
 <launch>
-    <arg name="calib_radar2lidar" default="false"/>
-    <arg name="calib_lidar2lidar" default="false"/>
-    <arg name="calib_lidar2camera" default="false"/>
-    <arg name="calib_radar2camera" default="false"/>
-    <arg name="calib_lidar2imu" default="false"/>
-    <arg name="calib_camera_intrinsic" default="false"/>
-
-    <group if="$(arg calib_radar2lidar)">
-    <node pkg="multi_sensor_calibration" type="radar_lidar_calibration_node" name="dynamic_calibration" output="screen" >
-        <param name="lidar_topic" value="/rslidar_points"/>
-        <param name="radar_topic" value="/visualize_objects"/>
-    </node>
-    </group>
-
-    <group if="$(arg calib_lidar2lidar)">
-    <node pkg="multi_sensor_calibration" type="lidar_lidar_calibration_node" name="dynamic_calibration" output="screen" >
-        <param name="target_lidar_topic" value="/PCD_DATA0"/>
-        <param name="source_lidar_topic" value="/PCD_DATA2"/>
-    </node>
-    </group>
-
-    <group if="$(arg calib_lidar2camera)">
-    <node pkg="multi_sensor_calibration" type="lidar_camera_calibration_node" name="dynamic_calibration" output="screen" >
-        <param name="lidar_topic" value="/PCD_DATA0"/>
-        <param name="camera_topic" value="/IMG_DATA0"/>
-    </node>
-    </group>
-
-    <group if="$(arg calib_radar2camera)">
-    <node pkg="multi_sensor_calibration" type="radar_camera_calibration_node" name="dynamic_calibration" output="screen" >
-        <param name="radar_topic" value="/visualize_objects"/>
-        <param name="camera_topic" value="/camera/image"/>
-    </node>
-    </group>
-
-    <group if="$(arg calib_lidar2imu)">
-    <node pkg="multi_sensor_calibration" type="lidar_imu_calibration_node" name="dynamic_calibration" output="screen" >
-        <param name="lidar_topic" value="/PCD_DATA0"/>
-        <param name="imu_topic" value="/INS_DATA"/>
-    </node>
-    </group>
-
-    <group if="$(arg calib_camera_intrinsic)">
-    <node pkg="multi_sensor_calibration" type="camera_intrinsic_calibration_node" name="dynamic_calibration" output="screen" >
-        <param name="camera_topic" value="/4/FrontLeftpubmsg/camera/image"/>
-    </node>
-    </group>
+    <!-- Unified calibration tool: pick calibration type, topics and
+         parameters from the GUI. Click the red Exit button (top-right)
+         to quit cleanly. -->
+    <node pkg="multi_sensor_calibration" type="calibration_node"
+          name="multi_sensor_calibration" output="screen"/>
 </launch>

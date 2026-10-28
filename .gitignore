@@ -1,0 +1,23 @@
+# build artifacts
+build/
+devel/
+cmake-build-debug/
+*.o
+*.so
+
+# IDE
+.vscode/
+.idea/
+
+# generated calibration results (keep the input json configs in data/)
+data/camera_intrinsic_calibration/
+data/lidar2camera_extrinsic_calibration/
+data/lidar2lidar_extrinsic_calibration/
+data/radar2lidar_extrinsic_calibration/
+data/radar2camera_extrinsic_calibration/
+grid_image.jpg
+nohup.out
+
+# misc
+*.pyc
+__pycache__/
